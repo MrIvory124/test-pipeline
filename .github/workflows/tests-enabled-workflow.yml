@@ -1,35 +1,20 @@
-name: tests-enabled-workflow.yml
+name: tests-enabled-workflow
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin'
+          cache: maven
 
-      - name: Compile Java code
-        run: |
-          # Adjust this command based on your project structure and dependencies
-          # Example for a simple project with source in 'src' and output in 'bin'
-          mkdir -p bin
-          javac -d bin src/**/*.java
-
-      - name: Run JUnit tests
-        run: |
-          # Adjust this command based on your project structure and test runner setup
-          # This example assumes JUnit 5 and a simple test runner setup
-          # You might need to include JUnit dependencies in your classpath for compilation and execution
-          # Example using a custom script or a simple JUnit runner:
-          # java -cp "bin:lib/*" org.junit.platform.console.ConsoleLauncher --scan-classpath --class-path bin
-          # Alternatively, if you have a custom test runner:
-          java -cp "bin:path/to/junit-platform-console-standalone.jar" org.junit.platform.console.ConsoleLauncher --scan-classpath --class-path bin
+      - name: Build & test
+        run: mvn -B -e -DskipTests=false test
