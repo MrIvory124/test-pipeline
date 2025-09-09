@@ -13,8 +13,45 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-          cache: maven
+          java-version: '17'   # no 'cache' here
 
-      - name: Build & test
-        run: mvn -B -e -DskipTests=false test
+      - name: Prepare dirs
+        run: |
+          mkdir -p bin/main bin/test lib
+
+      - name: Fetch JUnit Console (standalone)
+        run: |
+          JUNIT_VERSION=1.13.4
+          curl -fsSL -o lib/junit-platform-console-standalone-${JUNIT_VERSION}.jar \
+            https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${JUNIT_VERSION}/junit-platform-console-standalone-${JUNIT_VERSION}.jar
+
+      - name: Compile main sources
+        run: |
+          if [ -d src/main/java ]; then
+            find src/main/java -name '*.java' > sources.txt
+            if [ -s sources.txt ]; then
+              javac -d bin/main @sources.txt
+            fi
+          fi
+
+      - name: Compile test sources (with JUnit on classpath)
+        run: |
+          JUNIT_JAR=$(echo lib/junit-platform-console-standalone-*.jar)
+          find src/test/java -name '*.java' > test_sources.txt
+          javac -cp "$JUNIT_JAR:bin/main" -d bin/test @test_sources.txt
+
+      - name: Run JUnit tests
+        run: |
+          JUNIT_JAR=$(echo lib/junit-platform-console-standalone-*.jar)
+          java -jar "$JUNIT_JAR" \
+            --class-path "bin/test:bin/main" \
+            --scan-class-path \
+            --fail-if-no-tests \
+            --reports-dir test-results
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-test-results
+          path: test-results
