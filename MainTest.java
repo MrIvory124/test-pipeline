@@ -34,5 +34,6 @@ class MainTest {
 
         // Assert that the captured output matches the expected output
         assertEquals(expectedOutput + System.lineSeparator(), outputStreamCaptor.toString());
+        return false;
     }
 }
